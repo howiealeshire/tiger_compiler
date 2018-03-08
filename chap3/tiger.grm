@@ -1,17 +1,20 @@
 %%
 %term
-    EOF 
+    EOF
   | ID of string
-  | INT of int | STRING of string 
-  | COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK 
-  | LBRACE | RBRACE | DOT 
-  | PLUS | MINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
+  | INT of int | STRING of string
+  | COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK
+  | LBRACE | RBRACE | DOT
+  | PLUS | MINUS | UMINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
   | AND | OR | ASSIGN
-  | ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
+  | ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF
   | BREAK | NIL
-  | FUNCTION | VAR | TYPE 
+  | FUNCTION | VAR | TYPE
 
-%nonterm  exp | program
+
+%nonterm  exp | program | decs | dec | tydec | vardec | fundec | type_id 
+| ty | tyfields | lvalue | valuelessexp | expseq | fnovalue | integerlit | stringlit | negation | functioncall | comparison | strcomparison | boolops | createrecord | createarray | parens | proccall | assignment | ifthen | ifthenelse | optionaltypeid | optionalexp 
+
 
 %pos int
 %verbose
@@ -19,10 +22,22 @@
 %eop EOF
 %noshift EOF
 
+%right SEMICOLON
+%left THEN
+%left DO OF ELSE
+%left ASSIGN
+%left AND OR
+%nonassoc EQ NEQ GT GE LT LE
+%left PLUS MINUS
+%left TIMES DIVIDE
+%left UMINUS
+
+
+
 %name Tiger
 
-%keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE 
-	DO OF NIL
+%keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE
+    DO OF NIL
 
 %prefer THEN ELSE LPAREN
 
@@ -32,7 +47,96 @@
 
 %%
 
-program	: exp				()
+program    : exp   			 ()
 
-	
-exp: 			()
+    
+exp:    lvalue   	 ()
+   |	NIL   	         ()
+   |	expseq   	 ()
+   |    INT              () (* replace with INT (?) *)
+   |    STRING           () (* replace with STRING (?) *)
+   |    negation         ()
+   |	functioncall	 ()
+   |	comparison       ()
+   |	strcomparison    ()
+   |	boolops   	 ()
+   |	createrecord	 ()
+   |	lvalue ASSIGN exp ()
+   |	IF exp THEN  exp ELSE exp  ()
+   |	IF exp THEN exp   ()
+   |	WHILE exp DO exp  ()
+   |    FOR ID ASSIGN exp TO exp DO exp ()
+   |    LET decs IN optionalexp END          ()
+   |	BREAK                           ()
+   |    fnovalue        ()
+   |    INT PLUS INT    ()
+   |    INT MINUS INT   ()
+   |    INT TIMES INT   ()
+   |    INT DIVIDE INT  ()
+   |    ID LBRACK exp RBRACK OF exp   ()   
+
+
+
+
+   
+
+
+
+
+lvalue: ID  ()
+   |    lvalue DOT ID ()  
+   |    lvalue LBRACE exp RBRACE ()
+   
+
+negation: MINUS exp %prec UMINUS () (* elaborate later *)
+
+
+comparison:   INT GE INT ()
+	    | INT LT INT ()
+            | INT LE INT ()
+            | INT GT INT ()
+            | INT EQ INT ()
+            | INT NEQ INT ()
+
+optionalexp: exp ()
+           | ()
+
+strcomparison: STRING GE STRING ()
+            |  STRING LT STRING ()
+            |  STRING LE STRING ()
+            |  STRING GT STRING ()
+            |  STRING EQ STRING ()
+            |  STRING NEQ STRING ()
+
+boolops: exp AND exp ()
+	 | exp OR exp ()
+
+
+
+expseq: LPAREN optionalexp SEMICOLON exp RPAREN  ()
+        
+
+functioncall: ID LPAREN expseq RPAREN ()
+
+fnovalue: LPAREN RPAREN ()
+          | LET exp IN END ()
+
+dec:   tydec ()
+     | vardec ()
+     | fundec ()
+
+tydec: TYPE ID ASSIGN ty ()
+
+ty:   ID ()
+    | ARRAY OF ID ()  (* array type *)
+    | LBRACE tyfields RBRACE () (* record type *)
+
+tyfields:  ID COLON ID ()
+vardec:    VAR ID ASSIGN optionaltypeid exp ()
+fundec:     FUNCTION ID LPAREN tyfields RPAREN optionaltypeid ()
+
+optionaltypeid: ID ()
+		| ()
+
+decs: dec decs ()
+      | dec ()

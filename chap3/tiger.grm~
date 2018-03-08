@@ -1,0 +1,68 @@
+%%
+%term
+    EOF
+  | ID of string
+  | INT of int | STRING of string
+  | COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK
+  | LBRACE | RBRACE | DOT
+  | PLUS | MINUS | UMINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
+  | AND | OR | ASSIGN
+  | ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF
+  | BREAK | NIL
+  | FUNCTION | VAR | TYPE
+
+
+%nonterm  exp | program | decs | dec | tydec | vardec | fundec | type_id 
+| ty | tyfields | lvalue | valuelessexp | expseq | fnovalue | integerlit | stringlit | negation | functioncall | arithmetic | comparison | strcomparison | boolops | createrecord | createarray | parens
+
+
+%pos int
+%verbose
+%start program
+%eop EOF
+%noshift EOF
+
+%left TIMES DIVIDE PLUS MINUS
+%nonassoc EQ NEQ LT LE GT GE
+
+
+
+%name Tiger
+
+%keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE
+    DO OF NIL
+
+%prefer THEN ELSE LPAREN
+
+%value ID ("bogus")
+%value INT (1)
+%value STRING ("")
+
+%%
+
+program    : exp   			 ()
+
+    
+exp:    lvalue   	 ()
+   |	valuelessexp    ()
+   |	NIL   	 ()
+   |	expseq   	 ()
+   |    fnovalue        	()
+   |    integerlit    () (* replace with INT (?) *)
+   |    stringlit    () (* replace with STRING (?) *)
+   |    negation    ()
+   |	functioncall	()
+   |	arithmetic    ()
+   |	comparison    ()
+   |	strcomparison    ()
+   |	boolops   	 ()
+   |	createrecord	()
+   |	createarray 	()
+   |	lvalue ASSIGN exp ()
+   |	IF exp THEN exp ELSE exp ()
+   |	IF exp THEN exp    ()
+   |	WHILE exp DO exp     ()
+   |    FOR ID ASSIGN exp TO exp DO exp ()
+   |	BREAK                           ()
+   |	LET decs IN expseq END    	 ()
+   |	parens      	()
